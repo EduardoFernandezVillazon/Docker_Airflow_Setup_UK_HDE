@@ -73,7 +73,7 @@ tcheckpoint = DummyOperator(
 t10 = StageStationsAPIOperator(
     task_id="Get_Waterflow_Stations_from_API",
     API_endpoint="https://environment.data.gov.uk/hydrology/id/stations.json?observedProperty={"
-    "observed_property}&_limit=200",
+    "observed_property}&_limit=10000",
     columns_to_drop=["easting", "northing", "notation", "type", "wiskiID", "RLOIid", "measures", "@id"],
     observed_property="waterFlow",
     target_database={
@@ -87,7 +87,7 @@ t10 = StageStationsAPIOperator(
 
 t11 = StageStationsAPIOperator(
     task_id="Get_Rainfall_Stations_from_API",
-    API_endpoint="https://environment.data.gov.uk/flood-monitoring/id/stations?parameter={observed_property}&_limit=200",
+    API_endpoint="https://environment.data.gov.uk/flood-monitoring/id/stations?parameter={observed_property}&_limit=10000",
     columns_to_drop=[
         "easting",
         "northing",
@@ -116,7 +116,7 @@ t11 = StageStationsAPIOperator(
 
 t12 = StageStationsAPIOperator(
     task_id="Get_Level_Stations_from_API",
-    API_endpoint="https://environment.data.gov.uk/flood-monitoring/id/stations?parameter={observed_property}&_limit=200",
+    API_endpoint="https://environment.data.gov.uk/flood-monitoring/id/stations?parameter={observed_property}&_limit=10000",
     columns_to_drop=[
         "easting",
         "northing",

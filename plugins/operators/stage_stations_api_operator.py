@@ -1,5 +1,6 @@
 import requests
 from pandas import DataFrame
+from pandas import to_numeric
 from io import StringIO
 from sqlalchemy import create_engine
 from airflow.models import BaseOperator
@@ -7,6 +8,15 @@ from airflow.models import Variable
 from airflow.utils.decorators import apply_defaults
 from airflow.hooks.S3_hook import S3Hook
 import boto3
+
+def eliminate_lists(row):
+    """The purpose of this function is to extract the first element of a list in a row if it is a list, and the element
+    in the row otherwise. This solves a rare ocurrence where a measuring station had a list of values for lat and long,
+    which caused errors when loading the data."""
+    try:
+        return row[0]
+    except:
+        return row
 
 def create_sql_connection(database):
     """This function creates a SQLalchemy connection from some database information and returns it."""
@@ -70,6 +80,9 @@ class StageStationsAPIOperator(BaseOperator):
                 sorted(self.stations_df.columns), axis=1
             )
             self.stations_df.dropna(axis="index", subset=["stationReference"], inplace=True)
+            self.stations_df["lat"] = self.stations_df["lat"].apply(eliminate_lists)
+            self.stations_df["long"] = self.stations_df["long"].apply(eliminate_lists)
+            # self.stations_df.dropna(axis="index", subset=["lat"], inplace=True)
         except Exception as e:
             self.log.info(print(e))
             self.log.info(print("Failure to process the dataframe"))
