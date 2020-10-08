@@ -48,6 +48,18 @@ def create_sql_connection(database):
     )
     return sql_connection
 
+def check_table_existance(database):
+    sql_connection = create_engine(
+        "postgresql+psycopg2://{user}:{password}@postgres:5432/{database}".format(
+            user=database["user"],
+            password=database["password"],
+            database=database["database"],
+        )
+    )
+    if sql_connection.dialect.has_table(sql_connection, database["table"]):
+        return True
+    else:
+        return False
 
 class LoadStationsOperator(BaseOperator):
     ui_color = "#358140"
@@ -92,6 +104,7 @@ class LoadStationsOperator(BaseOperator):
             self.stations_df = self.stations_df.merge(right=stations_df_encoded, on="stationReference", how="left")
             self.log.info(print(self.stations_df))
             self.stations_df.drop(columns="observedProperty", inplace=True)
+            self.stations_df.dropna(axis="index", subset=["stationReference"], inplace=True)
             self.stations_df.drop_duplicates(subset=["stationReference"], inplace=True)
         except Exception as e:
             self.log.info(print(e))
@@ -192,15 +205,17 @@ class LoadStationsOperator(BaseOperator):
         )
 
     def execute(self, context):
+        if check_table_existance(self.target_database):
+            pass
+        else:
+            self.file_key = (
+                self.target_database["table"]
+                + ".parquet.gzip"
+            )
 
-        self.file_key = (
-            self.target_database["table"]
-            + ".parquet.gzip"
-        )
-
-        self.read_from_local_sql()
-        self.encode()
-        self.write_to_local_sql()
-        self.save_locally()
-        # self.clear_staging_tables()
-        # self.save_to_s3()
+            self.read_from_local_sql()
+            self.encode()
+            self.write_to_local_sql()
+            self.save_locally()
+            # self.clear_staging_tables()
+            # self.save_to_s3()
