@@ -28,14 +28,17 @@ def categorical_encoder(dataframe, group_col, target_col):
         g = group[group.columns[(group.columns).str.startswith(target_col)]]
         # sum columns together
         aggregated_vec = matrix(g).sum(axis=0)
-        #print(np.squeeze(np.asarray(phecode_vec)))
+        # print(np.squeeze(np.asarray(phecode_vec)))
         # turn matrix into vector
         aggregated_vecs[name] = squeeze(asarray(aggregated_vec))
     # create dataframe with dictionary mapping group_col values to aggregated vectors
     aggregated_vecs_df = DataFrame.from_dict(aggregated_vecs, orient="index")
     # add back column names
-    aggregated_vecs_df.columns = dummy_df.columns.values[dummy_df.columns.str.startswith(target_col)]
+    aggregated_vecs_df.columns = dummy_df.columns.values[
+        dummy_df.columns.str.startswith(target_col)
+    ]
     return aggregated_vecs_df
+
 
 def create_sql_connection(database):
     """This function creates a SQLalchemy connection from some database information and returns it."""
@@ -47,6 +50,7 @@ def create_sql_connection(database):
         )
     )
     return sql_connection
+
 
 def check_table_existance(database):
     sql_connection = create_engine(
@@ -60,6 +64,7 @@ def check_table_existance(database):
         return True
     else:
         return False
+
 
 class LoadStationsOperator(BaseOperator):
     ui_color = "#358140"
@@ -91,20 +96,26 @@ class LoadStationsOperator(BaseOperator):
         self.limit = limit
         self.columns_to_drop = columns_to_drop
 
-
     def encode(self):
         """This method one hot encodes the observedProperties from each station, allowing to have only one
         record per stationReference, then it drops the duplicates and the hot-encoded column."""
         try:
-            stations_df_encoded = categorical_encoder(dataframe=self.stations_df,
-                                                   group_col="stationReference", target_col="observedProperty")
-            stations_df_encoded["stationReference"]=stations_df_encoded.index
+            stations_df_encoded = categorical_encoder(
+                dataframe=self.stations_df,
+                group_col="stationReference",
+                target_col="observedProperty",
+            )
+            stations_df_encoded["stationReference"] = stations_df_encoded.index
             stations_df_encoded.reset_index(drop=True, inplace=True)
             self.log.info(print(stations_df_encoded))
-            self.stations_df = self.stations_df.merge(right=stations_df_encoded, on="stationReference", how="left")
+            self.stations_df = self.stations_df.merge(
+                right=stations_df_encoded, on="stationReference", how="left"
+            )
             self.log.info(print(self.stations_df))
             self.stations_df.drop(columns="observedProperty", inplace=True)
-            self.stations_df.dropna(axis="index", subset=["stationReference"], inplace=True)
+            self.stations_df.dropna(
+                axis="index", subset=["stationReference"], inplace=True
+            )
             self.stations_df.drop_duplicates(subset=["stationReference"], inplace=True)
         except Exception as e:
             self.log.info(print(e))
@@ -114,7 +125,9 @@ class LoadStationsOperator(BaseOperator):
     def read_from_local_sql(self):
         """This method reads the staging SQL database to load the final stations database."""
         try:
-            self.stations_df = read_sql(sql=self.source_database["table"], con=self.source_sql_connection)
+            self.stations_df = read_sql(
+                sql=self.source_database["table"], con=self.source_sql_connection
+            )
         except Exception as e:
             self.log.info(print(e))
             self.log.info(print("Failure to read the dataframe"))
@@ -199,19 +212,14 @@ class LoadStationsOperator(BaseOperator):
         """This method drops the staging_table for stations after the data has been cleaned and loaded to the final
         table"""
         self.source_sql_connection.execute(
-            """DROP TABLE {table};""".format(
-                table=self.source_database["table"]
-            )
+            """DROP TABLE {table};""".format(table=self.source_database["table"])
         )
 
     def execute(self, context):
         if check_table_existance(self.target_database):
             pass
         else:
-            self.file_key = (
-                self.target_database["table"]
-                + ".parquet.gzip"
-            )
+            self.file_key = self.target_database["table"] + ".parquet.gzip"
 
             self.read_from_local_sql()
             self.encode()

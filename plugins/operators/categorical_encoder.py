@@ -46,11 +46,13 @@ def categorical_encoder(dataframe, group_col, target_col):
         g = group[group.columns[(group.columns).str.startswith(target_col)]]
         # sum columns together
         aggregated_vec = matrix(g).sum(axis=0)
-        #print(np.squeeze(np.asarray(phecode_vec)))
+        # print(np.squeeze(np.asarray(phecode_vec)))
         # turn matrix into vector
         aggregated_vecs[name] = squeeze(asarray(aggregated_vec))
     # create dataframe with dictionary mapping group_col values to aggregated vectors
     aggregated_vecs_df = DataFrame.from_dict(aggregated_vecs, orient="index")
     # add back column names
-    aggregated_vecs_df.columns = dummy_df.columns.values[dummy_df.columns.str.startswith(target_col)]
+    aggregated_vecs_df.columns = dummy_df.columns.values[
+        dummy_df.columns.str.startswith(target_col)
+    ]
     return aggregated_vecs_df

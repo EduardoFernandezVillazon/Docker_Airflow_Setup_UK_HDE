@@ -39,42 +39,44 @@ default_args = {
     "retry_delay": timedelta(minutes=5),
 }
 
-dag = DAG(
-    "Hydrology-Data-Project", default_args=default_args
-)
+dag = DAG("Hydrology-Data-Project", default_args=default_args)
 
 t0 = BranchPythonOperator(
     task_id="Check_Table_Existance",
     python_callable=check_table_existance,
-    op_kwargs={'database': {
-        "database": "airflow",
-        "table": "stage_stations",
-        "user": "airflow",
-        "password": "airflow"}},
-    dag=dag
+    op_kwargs={
+        "database": {
+            "database": "airflow",
+            "table": "stage_stations",
+            "user": "airflow",
+            "password": "airflow",
+        }
+    },
+    dag=dag,
 )
 
-tdummy1 = DummyOperator(
-    task_id="Branch_1",
-    dag=dag
-)
+tdummy1 = DummyOperator(task_id="Branch_1", dag=dag)
 
-tdummy2 = DummyOperator(
-    task_id="Branch_2",
-    dag=dag
-)
+tdummy2 = DummyOperator(task_id="Branch_2", dag=dag)
 
 tcheckpoint = DummyOperator(
-    task_id="Branch_Checkpoint",
-    trigger_rule=TriggerRule.ONE_SUCCESS,
-    dag=dag
+    task_id="Branch_Checkpoint", trigger_rule=TriggerRule.ONE_SUCCESS, dag=dag
 )
 
 t10 = StageStationsAPIOperator(
     task_id="Get_Waterflow_Stations_from_API",
     API_endpoint="https://environment.data.gov.uk/hydrology/id/stations.json?observedProperty={"
     "observed_property}&_limit=10000",
-    columns_to_drop=["easting", "northing", "notation", "type", "wiskiID", "RLOIid", "measures", "@id"],
+    columns_to_drop=[
+        "easting",
+        "northing",
+        "notation",
+        "type",
+        "wiskiID",
+        "RLOIid",
+        "measures",
+        "@id",
+    ],
     observed_property="waterFlow",
     target_database={
         "database": "airflow",
@@ -102,7 +104,7 @@ t11 = StageStationsAPIOperator(
         "datumOffset",
         "gridReference",
         "measures",
-        "@id"
+        "@id",
     ],
     observed_property="rainfall",
     target_database={
@@ -134,7 +136,7 @@ t12 = StageStationsAPIOperator(
         "dateOpened",
         "measures",
         "downstageScale",
-        "@id"
+        "@id",
     ],
     observed_property="level",
     target_database={
@@ -148,7 +150,7 @@ t12 = StageStationsAPIOperator(
 
 t2 = LoadStationsOperator(
     task_id="Load_Stations_from_Staging_Table",
-    aws_conn_id = "aws_credentials",
+    aws_conn_id="aws_credentials",
     source_database={
         "database": "airflow",
         "table": "stage_stations",

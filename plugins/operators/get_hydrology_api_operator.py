@@ -1,4 +1,5 @@
 import requests
+from os import remove
 from pandas import DataFrame
 from pandas import read_sql_query
 from io import StringIO
@@ -10,6 +11,7 @@ from airflow.hooks.S3_hook import S3Hook
 import boto3
 import datetime
 
+
 def create_sql_connection(database):
     """This function creates a SQLalchemy connection from some database information and returns it."""
     sql_connection = create_engine(
@@ -20,6 +22,7 @@ def create_sql_connection(database):
         )
     )
     return sql_connection
+
 
 class GetHydrologyAPIOperator(BaseOperator):
     ui_color = "#0000FF"
@@ -61,7 +64,6 @@ class GetHydrologyAPIOperator(BaseOperator):
         self.measures_df = measures_df
         self.general_API_endpoint = general_API_endpoint
 
-
     def save_locally(self):
         """This function saves the final clean dataframe as a parquet file within the container, prior to its loading
         to s3"""
@@ -91,10 +93,25 @@ class GetHydrologyAPIOperator(BaseOperator):
                 Key=self.file_key,
                 Body=self.file_key,
             )
+
         except Exception as e:
             self.log.info(print(e))
             self.log.info(print("Failure to save parquet file in s3"))
             raise ValueError
+
+    def clear_resources(self, station_reference):
+        """This method clears the measures created in the local SQL and the local parquet file
+        after it is uploaded to S3"""
+        remove(self.file_key)
+        self.target_sql_connection.execute(
+            """DELETE FROM {table} WHERE date={date} AND "stationReference"='{station_reference}' AND
+             "observedProperty"='{observed_property}';""".format(
+                table=self.target_database["table"],
+                date=self.date,
+                station_reference=station_reference,
+                observed_property=self.observed_property,
+            )
+        )
 
     def date_str_to_dateTime(self):
         """This function transforms a date in str format to a date in datetime format"""
@@ -224,7 +241,8 @@ class GetHydrologyAPIOperator(BaseOperator):
 
         station_reference_df = read_sql_query(
             """SELECT "stationReference", lat, long FROM {table} where "observedProperty_{observed_property}"!='0';""".format(
-                table=self.source_database["table"], observed_property=self.observed_property
+                table=self.source_database["table"],
+                observed_property=self.observed_property,
             ),
             con=self.source_sql_connection,
         )
@@ -256,3 +274,4 @@ class GetHydrologyAPIOperator(BaseOperator):
             self.write_to_local_sql()
             self.save_locally()
             # self.save_to_s3()
+            self.clear_resources(station_reference)

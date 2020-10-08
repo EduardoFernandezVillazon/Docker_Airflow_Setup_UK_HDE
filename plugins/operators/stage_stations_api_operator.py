@@ -9,6 +9,7 @@ from airflow.utils.decorators import apply_defaults
 from airflow.hooks.S3_hook import S3Hook
 import boto3
 
+
 def eliminate_lists(row):
     """The purpose of this function is to extract the first element of a list in a row if it is a list, and the element
     in the row otherwise. This solves a rare ocurrence where a measuring station had a list of values for lat and long,
@@ -17,6 +18,7 @@ def eliminate_lists(row):
         return row[0]
     except:
         return row
+
 
 def create_sql_connection(database):
     """This function creates a SQLalchemy connection from some database information and returns it."""
@@ -28,6 +30,7 @@ def create_sql_connection(database):
         )
     )
     return sql_connection
+
 
 class StageStationsAPIOperator(BaseOperator):
     ui_color = "#DD3581"
@@ -79,7 +82,9 @@ class StageStationsAPIOperator(BaseOperator):
             self.stations_df = self.stations_df.reindex(
                 sorted(self.stations_df.columns), axis=1
             )
-            self.stations_df.dropna(axis="index", subset=["stationReference"], inplace=True)
+            self.stations_df.dropna(
+                axis="index", subset=["stationReference"], inplace=True
+            )
             self.stations_df["lat"] = self.stations_df["lat"].apply(eliminate_lists)
             self.stations_df["long"] = self.stations_df["long"].apply(eliminate_lists)
             # self.stations_df.dropna(axis="index", subset=["lat"], inplace=True)
@@ -163,4 +168,3 @@ class StageStationsAPIOperator(BaseOperator):
         self.read_json()
         self.process_dataframe()
         self.write_to_local_sql()
-
