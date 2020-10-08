@@ -1,3 +1,33 @@
+# About this repository
+
+This repository is the final deliverable for an online course on Data Engineering by Udacity. The purpose of this project is to demonstrate the skills acquired during the course and to learn more about the tools used. The application is supposed to create a database with hydrological data using public data provided by the UK government under the Open Government Licence v3.0. This database will in a future support a machine learning application which will help predict flooding. The README of the original docker image can be found below.
+
+This repositroy includes everything necessary to run Airflow in a local machine as well as the final project write up in PDF format. To run the project, please follow these steps:
+
+1. Pull the GitHub repository: https://github.com/EduardoFernandezVillazon/Docker_Airflow_Setup_UK_HDE.git 
+2. While on the project directory run the commad: sudo docker-compose –f docker-compose-LocalExecutor.yml up to set up the Airflow Webserver container and the Postgres container. 
+3. Enter the Airflow UI in port 8080 and add the connection called “aws_credentials” that give read and write access to S3, as well as the S3 bucket name as a variable "s3_bucket", uncomment the code to save in s3.
+4. Unpause the DAG and run until completion.
+
+It is possible to run the DAG without storing the data in s3 (do not uncomment the code), but in the long run the container might run out of memory.
+
+Unpause the DAG and run until completion.
+
+##About the files in this repository
+
+The airflow.cfg file is in the config, and it has the configuration of the airflow webserver.
+
+In the dags folder we have a single DAG, in the file dag.py.
+
+In the plugins folder we have the custom operators developed for the project, namely: stage_stations_api_operator.py, 
+load_stations_operator.py and get_hydrology_api_operator.py. The first one stages the measurement stations from the APIs and cleans them. The second one loads them on to the final table and checks its quality. The last one exctracts the individual measures from the APIs and checks them before adding them to the final table. In parallel to the database, a data lake with the data stored in parquet format is also generated.
+
+In the script folder we have an entrypoint.sh used to access the container and a docker_automater_script, to be used inside the container to start up the web server programatically (useful when the container is being run inside a server).
+
+On the main project directory we have many files including the requirements.txt which instructs the container to install certain additional packages, the final write up in pdf, as well as the Dockerfile and the docker-compose-LocalExecutor file.
+
+More information on the project, including on the data model can be found in the project write up pdf file.
+
 # docker-airflow
 [![CI status](https://github.com/puckel/docker-airflow/workflows/CI/badge.svg?branch=master)](https://github.com/puckel/docker-airflow/actions?query=workflow%3ACI+branch%3Amaster+event%3Apush)
 [![Docker Build status](https://img.shields.io/docker/build/puckel/docker-airflow?style=plastic)](https://hub.docker.com/r/puckel/docker-airflow/tags?ordering=last_updated)
