@@ -13,7 +13,7 @@ It is possible to run the DAG without storing the data in s3 (do not uncomment t
 
 Unpause the DAG and run until completion.
 
-##About the files in this repository
+## About the files in this repository
 
 The airflow.cfg file is in the config, and it has the configuration of the airflow webserver.
 
