@@ -1,5 +1,5 @@
 import requests
-from os import remove
+from os import rmdir
 from pandas import DataFrame
 from pandas import read_sql_query
 from io import StringIO
@@ -102,7 +102,7 @@ class GetHydrologyAPIOperator(BaseOperator):
     def clear_resources(self, station_reference):
         """This method clears the measures created in the local SQL and the local parquet file
         after it is uploaded to S3"""
-        remove(self.file_key)
+        rmdir(self.file_key)
         self.target_sql_connection.execute(
             """DELETE FROM {table} WHERE date={date} AND "stationReference"='{station_reference}' AND
              "observedProperty"='{observed_property}';""".format(
